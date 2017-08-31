@@ -19,6 +19,7 @@ class Triangle {
     private val program: Int
     private var positionHandle: Int = 0
     private var colorHandle: Int = 0
+    private var mvpMatrixHandle: Int = 0
 
     init {
         // Initialize vertex byte buffer for shape coordinates
@@ -50,7 +51,7 @@ class Triangle {
         GLES20.glLinkProgram(program)
     }
 
-    fun draw() {
+    fun draw(mvpMatrix: FloatArray) {
         // Add program to OpenGL ES Environment
         GLES20.glUseProgram(program)
 
@@ -74,6 +75,18 @@ class Triangle {
 
         // Disable vertex array
         GLES20.glDisableVertexAttribArray(positionHandle)
+
+        // get handle to shape's transformation matrix
+        mvpMatrixHandle = GLES20.glGetUniformLocation(program, "uMVPMatrix")
+
+        // Pass the projection and view transformation to the shader
+        GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
+
+        // Draw the triangle
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, VERTEX_COUNT)
+
+        // Disable vertex array
+        GLES20.glDisableVertexAttribArray(positionHandle)
     }
 
     companion object {
@@ -93,9 +106,15 @@ class Triangle {
 
         // Vertex shader is for drawing coordinates
         private val vertexShaderCode =
-                "attribute vec4 vPosition;" +
+                // This matrix member variable provides a hook to manipulate
+                // the coordinates of the objects that use this vertex shader
+                "uniform mat4 uMVPMatrix;" +
+                        "attribute vec4 vPosition;" +
                         "void main() {" +
-                        "  gl_Position = vPosition;" +
+                        // the matrix must be included as a modifier of gl_Position
+                        // Note that the uMVPMatrix factor *must be first* in order
+                        // for the matrix multiplication product to be correct.
+                        "  gl_Position = uMVPMatrix * vPosition;" +
                         "}"
 
         // Fragment shader is for colors and textures
