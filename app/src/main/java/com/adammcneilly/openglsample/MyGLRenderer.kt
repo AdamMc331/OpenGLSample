@@ -8,7 +8,6 @@ import com.adammcneilly.openglsample.shapes.Triangle
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
-
 /**
  * Basic GLSurfaceView.Renderer that renders just a black screen.
  */
@@ -19,6 +18,8 @@ class MyGLRenderer : GLSurfaceView.Renderer {
     private val mvpMatrix = FloatArray(16)
     private val projectionMatrix = FloatArray(16)
     private val viewMatrix = FloatArray(16)
+    private val rotationMatrix = FloatArray(16)
+    @Volatile var angle: Float = 0.toFloat()
 
     override fun onDrawFrame(p0: GL10?) {
         // Redraw color
@@ -30,8 +31,22 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         // Calculate the projection and view transformation
         Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 
-        // Draw shape
-        triangle.draw(mvpMatrix)
+        // Create a rotation transformation for the triangle
+        // This manually sets an angle.
+        //val time = SystemClock.uptimeMillis() % 4000L
+        //val angle = 0.090f * time.toInt()
+        //Matrix.setRotateM(rotationMatrix, 0, angle, 0f, 0f, -1.0f)
+        Matrix.setRotateM(rotationMatrix, 0, angle, 0F, 0F, -1.0F)
+
+        val scratch = FloatArray(16)
+
+        // Combine the rotation matrix with the projection and camera view
+        // Note that the mMVPMatrix factor *must be first* in order
+        // for the matrix multiplication product to be correct.
+        Matrix.multiplyMM(scratch, 0, mvpMatrix, 0, rotationMatrix, 0)
+
+        // Draw triangle
+        triangle.draw(scratch)
     }
 
     override fun onSurfaceChanged(p0: GL10?, width: Int, height: Int) {
